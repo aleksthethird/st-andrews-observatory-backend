@@ -3,11 +3,21 @@ import os
 import re
 import unittest
 from astropy.io import fits
+import time
 
 
 class parse_fits:
     def __init__(self):
         pass
+
+    def parse_fits_date(self, tme, date):
+        """
+        parses the time format below
+        """
+        time_string = (date + " " +  tme).split('.')[0]
+        pattern = '%Y-%m-%d %H:%M:%S'
+        return int(time.mktime(time.strptime(time_string, pattern)))
+
 
     def get_meta(self, path):
         """
@@ -15,7 +25,8 @@ class parse_fits:
         """
         fits_file = fits.open(path)
         obj = {
-            path: {
+            'path' : path,
+            'headers' : {
                 x: {
                     'data': y,
                     'comment': z
@@ -24,6 +35,8 @@ class parse_fits:
                 in fits_file[0].header.cards
             }
         }
+        obj['epoch'] = self.parse_fits_date(obj['headers']['UTSTART']['data'], obj['headers']['DATE-OBS']['data'])
+
         fits_file.close()
         return obj
 
@@ -54,7 +67,11 @@ class ParseFistTest(unittest.TestCase):
         self.fits_test_file = "../test-files/test.fits"
 
     def test_parse_meta(self):
-        self.parser.get_meta(self.fits_test_file)
+        print self.parser.get_meta(self.fits_test_file)
 
     def test_indexing(self):
         self.parser.index_directory_of_fits_files('../')
+
+    def test_date_parse(self):
+        obj = self.parser.get_meta(self.fits_test_file)
+        self.assertEqual(1393443746, obj['epoch'])
