@@ -17,10 +17,7 @@ class archiver:
             json.dump(object, file)
 
     def index_files(self, root):
-        return {
-            'root' : root,
-            'files' : glob.glob(os.path.join(root, '*.json*'))
-        }
+        return glob.glob(os.path.join(root, '*.json*'))
 
 
 class test_archiver(unittest.TestCase):

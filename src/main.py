@@ -1,4 +1,5 @@
 import argparse
+import glob
 import json
 import os
 import sys
@@ -16,8 +17,6 @@ parser.add_argument('--fits', '-f',
                     help='Fits takes a [source folder], parses all fits files below it and dumps JSON representations'
                          ' into the [output folder].')
 args = parser.parse_args()
-
-print args.fits
 
 if (args.fits[0] is not None and args.fits[1] is not None):
     # check input path is available
@@ -48,4 +47,8 @@ if (args.fits[0] is not None and args.fits[1] is not None):
         completed.append(str(fits_object['path']))
     with open(completed_path, "w+") as file:
         json.dump(completed, file)
+    with open(os.path.join(args.fits[1], 'index.json'), 'w') as file:
+        json.dump([f
+                   for f
+                   in os.listdir(args.fits[1]) if f.endswith('json')], file)
 
