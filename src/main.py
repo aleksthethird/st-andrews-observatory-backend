@@ -1,10 +1,10 @@
 import argparse
-import glob
 import json
 import os
 import sys
 import f2n
 from parse_fits import parse_fits
+from weather_scraper import scraper
 
 
 parser = argparse.ArgumentParser(description="Handles tasks for the St Andrews observatory web app.")
@@ -18,7 +18,9 @@ parser.add_argument('--fits', '-f',
                          ' into the [output folder].')
 args = parser.parse_args()
 
-if (args.fits[0] is not None and args.fits[1] is not None):
+print args
+
+if args.fits is not None:
     # check input path is available
     if not os.path.exists(args.fits[0]):
         sys.exit("There's no directory at " + os.path.abspath(args.fits[0]))
@@ -47,8 +49,18 @@ if (args.fits[0] is not None and args.fits[1] is not None):
         completed.append(str(fits_object['path']))
     with open(completed_path, "w+") as file:
         json.dump(completed, file)
+    # refresh index of out dir
     with open(os.path.join(args.fits[1], 'index.json'), 'w') as file:
-        json.dump([f
+        json.dump([f.replace('.json', '')
                    for f
                    in os.listdir(args.fits[1]) if f.endswith('json')], file)
+
+if args.weather is not None:
+    # check output path is available
+    if not os.path.exists(args.weather[0]):
+        sys.exit("There's no directory at " + os.path.abspath(args.weather[0]))
+    forecaster = scraper()
+    forecast = forecaster.summarise_current_forecasts()
+    with open(os.path.join(args.weather[0], str(forecast['epoch']) + '.json'), 'w') as file:
+        json.dump(forecast, file)
 

@@ -58,14 +58,15 @@ class scraper:
         pattern = '%Y-%m-%dT%H:%M:%SZ'
         return int(time.mktime(time.strptime(time_string, pattern)))
 
-    def formatted_yr_forcast(self):
+    def formatted_yr_forecast(self):
         """
         returns a json object which is a bit more friendly to read and also is as consistent as possible
         with other sources
         """
         forecast_object = self.get_yr_forecast()
-        formatted = {
-            self.parse_time(x['@from']): {
+        formatted = [
+             {
+                'time': self.parse_time(x['@from']),
                 'cloud': {
                     'cover': x['location']['cloudiness']['@percent'],
                     'high-cover': x['location']['highClouds']['@percent'],
@@ -83,7 +84,7 @@ class scraper:
             for x
             in forecast_object['weatherdata']['product']['time']
             if len(x['location']) is 14
-        }
+        ]
         return formatted
 
     def get_met_forecast(self):
@@ -93,14 +94,14 @@ class scraper:
         met_raw = self.get_raw(self.constants['met_3hour'])
         met_unnested = []
         for x in json.loads(met_raw)['SiteRep']['DV']['Location']['Period']:
-            met_unnested + x['Rep']
+            met_unnested += x['Rep']
         return met_unnested
 
     def translate_met_code(self, code):
         """
         translates met codes into strings based on lookup table
         """
-        return self.constants['met_codes'][code]
+        return self.constants['met_codes']['codes'][code]
 
     def get_met_data_steps(self):
         """
@@ -109,17 +110,17 @@ class scraper:
         steps = json.loads(self.get_raw(self.constants['met_3hour_steps']))
         return [self.parse_time(x) for x in steps['Resource']['TimeSteps']['TS']]
 
-    def formatted_met_forcast(self):
+    def formatted_met_forecast(self):
         """
         returns a json object which is a bit more friendly to read and also is as consistent as possible
         with other sources
         """
         forecast_object = self.get_met_forecast()
         steps = iter(self.get_met_data_steps())
-        formatted = {
-            steps.next() : {
+        formatted = [
+            {
+                'time': steps.next(),
                 'cloud': self.translate_met_code(x['W']),
-                'pressure': x['location']['pressure']['@value'],
                 'wind': {
                     'direction': x['D'],
                     'speed': x['S']
@@ -128,8 +129,19 @@ class scraper:
             }
             for x
             in forecast_object
-        }
+        ]
         return formatted
+
+    def summarise_current_forecasts(self):
+        return {
+            'epoch' : time.time(),
+            'met': self.formatted_met_forecast(),
+            'yr.no': self.formatted_yr_forecast()
+        }
+
+    def map_yr_to_met_codes(self):
+        pass
+
 
 
 class scraper_test(unittest.TestCase):
@@ -144,13 +156,13 @@ class scraper_test(unittest.TestCase):
         xml = self.scraper.get_raw(self.scraper.constants['bbc_3day'])
 
     def test_met_fetch_object(self):
-        self.scraper.get_met_forecast()
+        print self.scraper.get_met_forecast()
 
     def test_yr(self):
         self.scraper.get_yr_forecast()
 
     def test_yr_format(self):
-        self.scraper.formatted_yr_forcast()
+        self.scraper.formatted_yr_forecast()
 
     def test_met_format(self):
-        self.scraper.formatted_met_forcast()
+        print self.scraper.formatted_met_forecast()
