@@ -46,10 +46,10 @@ if args.fits is not None:
         with open(ignore_folders_path, "r") as file:
             ignore_folders = ignore_folders.union(set(json.load(file)))
     # get current folders
-    ignore_folders_path = os.path.join(args.fits[1], 'ignore_folers.json')
-    source_dirs = set([name for name in os.listdir(args.fits[0]) if os.path.isdir(name)])
+    ignore_folders_path = os.path.join(args.fits[1], 'ignore_folders.json')
+    source_dirs = set([name for name in os.listdir(args.fits[0]) if os.path.isdir(os.path.join(args.fits[0], name))])
     # and diff with ignored folders
-    dirs_to_parse = ignore_folders.difference(source_dirs)
+    dirs_to_parse = source_dirs.difference(ignore_folders)
     print dirs_to_parse
     print ignore_folders
     print source_dirs
@@ -71,10 +71,10 @@ if args.fits is not None:
         with open(completed_path, "w+") as file:
             json.dump(completed, file)
     # refresh index of out dir
-    with open(os.path.join(args.fits[1], 'index.json'), 'w') as file:
+    with open(os.path.join(args.fits[1], 'images', 'index.json'), 'w') as file:
         json.dump([f.replace('.json', '')
                    for f
-                   in os.listdir(args.fits[1]) if f.endswith('json')], file)
+                   in os.listdir(os.path.join(args.fits[1], 'images')) if f.endswith('json') and not f == 'ignore_folders.json' and not f == 'index.json'], file)
 
 if args.init is not None:
     weather = os.path.join(args.init[1], 'weather')
@@ -109,4 +109,4 @@ if args.weather is not None:
     with open(os.path.join(weather_root, 'index.json'), 'w') as file:
         json.dump([f.replace('.json', '')
                    for f
-                   in os.listdir(args.fits[1]) if f.endswith('json')], file)
+                   in os.listdir(os.path.join(args.weather[0], 'weather')) if f.endswith('json') and not f == 'index.json'], file)
