@@ -1,3 +1,5 @@
+from collections import Counter
+from itertools import count
 import json
 import urllib2
 import unittest
@@ -6,10 +8,14 @@ import feedparser
 import time
 import xmltodict
 
+
 class scraper:
+    """
+    This class is used to scrape weather from various sources and dump the data as json files
+    """
 
     def __init__(self):
-        with open('../data/keys.json', 'r') as file:
+        with open('meta/keys.json', 'r') as file:
             self.keys = json.load(file)
         self.constants = {}
         self.constants['bbc_3day'] = "http://open.live.bbc.co.uk/weather/feeds/en/2638864/3dayforecast.rss"
@@ -18,14 +24,17 @@ class scraper:
                                       "rly&key=" + self.keys['met']
         self.constants['met_3hour_steps'] = 'http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/capabilit' \
                                             'ies?res=3hourly&key=' + self.keys['met']
-        self.constants['yr_forecast'] = "http://api.yr.no/weatherapi/locationforecast/1.8/?lat=56.33;lon=-2.81;msl=30"
-        with open('../data/met-codes.json', 'r') as file:
+        self.constants['yr_forecast'] = "http://api.yr.no/weatherapi/locationforecast/1.9/?lat=56.33;lon=-2.81;msl=30"
+        self.constants['met_observations'] = "http://datapoint.metoffice.gov.uk/public/data/val/wxobs/all/json/3171?res" \
+                                             "s=hourly&key=" + self.keys['met']
+        with open('meta/met-codes.json', 'r') as file:
             self.constants['met_codes'] = json.load(file)
 
     def get_raw(self, url):
         """
         gets raw http response from url
         """
+        print url
         feed = urllib2.urlopen(url)
         raw = feed.read()
         return raw.decode('utf-8')
@@ -58,6 +67,21 @@ class scraper:
         pattern = '%Y-%m-%dT%H:%M:%SZ'
         return int(time.mktime(time.strptime(time_string, pattern)))
 
+    def convert_bearing_to_letters(self, angle):
+        """
+        Takes a bearing ie 180 and converts it to a simple ie S
+        """
+        bearings = ['NEN','NE','NEE','E','SEE','SE','SES','S','SWS','SW','SWW','W','NWW','NW','NWN']
+        sta = 11.25
+        ste = 22.5
+        nex = sta + ste
+        for b in bearings:
+            if sta <= angle < nex :
+                return b
+            nex = nex + ste
+        if 0 <= angle < sta or 360-ste <= angle <= 360:
+            return 'N'
+
     def formatted_yr_forecast(self):
         """
         returns a json object which is a bit more friendly to read and also is as consistent as possible
@@ -65,7 +89,7 @@ class scraper:
         """
         forecast_object = self.get_yr_forecast()
         formatted = [
-             {
+            {
                 'time': self.parse_time(x['@from']),
                 'cloud': {
                     'cover': x['location']['cloudiness']['@percent'],
@@ -76,7 +100,7 @@ class scraper:
                 },
                 'pressure': x['location']['pressure']['@value'],
                 'wind': {
-                    'direction': x['location']['windDirection']['@deg'],
+                    'direction': self.convert_bearing_to_letters(x['location']['windDirection']['@deg']),
                     'speed': x['location']['windSpeed']['@mps']
                 },
                 'humidity': x['location']['humidity']['@value']
@@ -134,7 +158,7 @@ class scraper:
 
     def summarise_current_forecasts(self):
         return {
-            'epoch' : time.time(),
+            'epoch': time.time(),
             'met': self.formatted_met_forecast(),
             'yr.no': self.formatted_yr_forecast()
         }
@@ -143,9 +167,7 @@ class scraper:
         pass
 
 
-
 class scraper_test(unittest.TestCase):
-
     def setUp(self):
         self.scraper = scraper()
 
@@ -166,3 +188,10 @@ class scraper_test(unittest.TestCase):
 
     def test_met_format(self):
         print self.scraper.formatted_met_forecast()
+
+    def test_bearings(self):
+        Counter([
+            self.scraper.convert_bearing_to_letters(x)
+            for x
+            in range(360)
+        ])

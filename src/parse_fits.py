@@ -7,6 +7,10 @@ import time
 
 
 class parse_fits:
+    """
+    This class is used to manage, parse and convert FITS files
+    """
+
     def __init__(self):
         pass
 
