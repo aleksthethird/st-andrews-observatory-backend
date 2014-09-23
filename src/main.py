@@ -55,7 +55,7 @@ if args.fits is not None:
     print source_dirs
     # go through new folders
     for dir in dirs_to_parse:
-        for fits_object in fits_parser.index_directory_of_fits_files(args.fits[0], completed)['files']:
+        for fits_object in fits_parser.index_directory_of_fits_files(os.path.join(args.fits[0], dir), completed)['files']:
             out_stem = os.path.join(args.fits[1], 'images', str(fits_object['epoch']))
             # json dump
             with open(out_stem + '.json', 'w') as file:
